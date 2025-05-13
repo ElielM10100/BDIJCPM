@@ -1,336 +1,169 @@
 import csv
 import os
-from tkinter import *
-from tkinter import ttk, simpledialog, messagebox
-from ttkthemes import ThemedTk
+import shutil
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from openpyxl import Workbook
 
-class CadastroAlunosCursos:
-    def __init__(self):
-        self.root = ThemedTk(theme="arc")  # Escolha um tema, por exemplo, "arc"
-        self.root.title("Cadastro de Alunos e Cursos - IJCPM")
+CSV_FILE = "alunos_cursos.csv"
+BACKUP_FILE = "backup_alunos_cursos.csv"
 
-        self.tree = ttk.Treeview(self.root, columns=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), show="headings", height="5")
-        self.tree.heading(1, text="Nome")
-        self.tree.heading(2, text="Idade")
-        self.tree.heading(3, text="Sexo")
-        self.tree.heading(4, text="Endereço")
-        self.tree.heading(5, text="E-mail")
-        self.tree.heading(6, text="Telefone")
-        self.tree.heading(7, text="CPF")
-        self.tree.heading(8, text="Nome do Curso")
-        self.tree.heading(9, text="Prazo")
-        self.tree.heading(10, text="Detalhes do Curso")
-        self.tree.pack(padx=10, pady=10)
+class SistemaCursos:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Cadastro de Alunos em Cursos")
+        self.root.geometry("1100x600")
+        self.root.resizable(False, False)
 
-        btn_cadastrar_aluno_curso = Button(self.root, text="Cadastrar Aluno e Curso", command=self.cadastrar_aluno_curso)
-        btn_cadastrar_aluno_curso.pack(pady=5)
-
-        btn_listar_alunos_cursos = Button(self.root, text="Listar Alunos e Cursos Cadastrados", command=self.listar_alunos_cursos)
-        btn_listar_alunos_cursos.pack(pady=5)
-
-        btn_excluir_aluno_curso = Button(self.root, text="Excluir Aluno e Curso", command=self.excluir_aluno_curso)
-        btn_excluir_aluno_curso.pack(pady=5)
-
-        btn_detalhes_aluno_curso = Button(self.root, text="Detalhes do Aluno e Curso", command=self.detalhes_aluno_curso)
-        btn_detalhes_aluno_curso.pack(pady=5)
-
-        self.label_status = Label(self.root, text="", fg="green")
-        self.label_status.pack(pady=10)
-
-        # Adiciona um evento de clique duplo na Treeview
-        self.tree.bind("<Double-1>", self.visualizar_detalhes)
-
-        self.root.mainloop()
-
-    def cadastrar_aluno_curso(self):
-        nome = simpledialog.askstring("Cadastro", "Digite o nome completo do aluno:")
-        if nome is None:
-            return  # O usuário clicou em Cancelar
-
-        idade = simpledialog.askinteger("Cadastro", "Digite a idade do aluno:")
-        if idade is None:
-            return
-
-        sexo = simpledialog.askstring("Cadastro", "Digite o sexo do aluno:")
-        if sexo is None:
-            return
-
-        endereco = simpledialog.askstring("Cadastro", "Digite o endereço do aluno:")
-        if endereco is None:
-            return
-
-        email = simpledialog.askstring("Cadastro", "Digite o e-mail do aluno:")
-        if email is None:
-            return
-
-        telefone = simpledialog.askstring("Cadastro", "Digite o telefone do aluno:")
-        if telefone is None:
-            return
-
-        cpf = simpledialog.askstring("Cadastro", "Digite o CPF do aluno:")
-        if cpf is None:
-            return
-
-        nome_curso = simpledialog.askstring("Cadastro", "Digite o nome do curso:")
-        if nome_curso is None:
-            return
-
-        prazo = simpledialog.askinteger("Cadastro", "Digite o prazo do curso (em meses):")
-        if prazo is None:
-            return
-
-        inicio_curso = simpledialog.askstring("Cadastro", "Digite a data de início do curso (DD/MM/AAAA):")
-        if inicio_curso is None:
-            return
-
-        fim_curso = simpledialog.askstring("Cadastro", "Digite a data de término do curso (DD/MM/AAAA):")
-        if fim_curso is None:
-            return
-
-        detalhes_curso = simpledialog.askstring("Cadastro", "Digite detalhes adicionais do curso:")
-        if detalhes_curso is None:
-            return
-
-        dados_aluno_curso = [nome, idade, sexo, endereco, email, telefone, cpf, nome_curso, prazo, detalhes_curso]
-
-        with open('alunos_cursos.csv', mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(dados_aluno_curso)
-
-        self.label_status.config(text="Cadastro do aluno e curso realizado com sucesso!", fg="green")
-        self.listar_alunos_cursos()
-
-    def listar_alunos_cursos(self):
-        self.tree.delete(*self.tree.get_children())  # Limpar a Treeview antes de exibir novamente
-        if os.path.exists('alunos_cursos.csv'):
-            with open('alunos_cursos.csv', mode='r') as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    self.tree.insert("", "end", values=row)
-
-            self.label_status.config(text="")
-        else:
-            self.label_status.config(text="Nenhum aluno e curso cadastrado.", fg="red")
-
-    def excluir_aluno_curso(self):
-        selected_item = self.tree.selection()
-        if not selected_item:
-            self.label_status.config(text="Selecione um aluno e curso para excluir.", fg="red")
-            return
-
-        confirmed = messagebox.askyesno("Confirmação", "Tem certeza que deseja excluir este aluno e curso?")
-        if confirmed:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-
-            with open('alunos_cursos.csv', 'r') as file:
-                data = list(csv.reader(file))
-
-            # Encontrar o índice do aluno e curso com base no Nome do Aluno
-            index_to_remove = None
-            for i, row in enumerate(data):
-                if row and row[0] == selected_id:
-                    index_to_remove = i
-                    break
-
-            if index_to_remove is not None:
-                del data[index_to_remove]
-
-                with open('alunos_cursos.csv', 'w', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerows(data)
-
-                self.label_status.config(text="Aluno e curso excluídos com sucesso!", fg="green")
-                self.listar_alunos_cursos()
-            else:
-                self.label_status.config(text="Nome do aluno não encontrado.", fg="red")
-
-    def visualizar_detalhes(self, event):
-        selected_item = self.tree.selection()
-        if selected_item:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-            messagebox.showinfo("Detalhes do Aluno e Curso", f"Nome do Aluno: {selected_id}\nMais detalhes aqui...")
-
-    def detalhes_aluno_curso(self):
-        selected_item = self.tree.selection()
-        if selected_item:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-            messagebox.showinfo("Detalhes do Aluno e Curso", f"Nome do Aluno: {selected_id}\nMais detalhes aqui...")
-
-if __name__ == "__main__":
-    cadastro_alunos_cursos = CadastroAlunosCursos()
-///////VERSÃO ATUALIZADA///////
-
-import csv
-from tkinter import *
-from tkinter import ttk, simpledialog, messagebox
-from ttkthemes import ThemedTk
-import os
-class CadastroAlunosCursos:
-    def __init__(self):
-        self.root = ThemedTk(theme="arc")  # Escolha um tema, por exemplo, "arc"
-        self.root.title("Cadastro de Alunos e Cursos - IJCPM")
-
-        self.inicializar_interface()
-
-    def inicializar_interface(self):
-        self.tree = ttk.Treeview(self.root, columns=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), show="headings", height="5")
-        self.tree.heading(1, text="Nome")
-        self.tree.heading(2, text="Idade")
-        self.tree.heading(3, text="Sexo")
-        self.tree.heading(4, text="Endereço")
-        self.tree.heading(5, text="E-mail")
-        self.tree.heading(6, text="Telefone")
-        self.tree.heading(7, text="CPF")
-        self.tree.heading(8, text="Nome do Curso")
-        self.tree.heading(9, text="Prazo")
-        self.tree.heading(10, text="Detalhes do Curso")
-        self.tree.pack(padx=10, pady=10)
-
-        btn_cadastrar_aluno_curso = Button(self.root, text="Cadastrar Aluno e Curso", command=self.cadastrar_aluno_curso)
-        btn_cadastrar_aluno_curso.pack(pady=5)
-
-        btn_listar_alunos_cursos = Button(self.root, text="Listar Alunos e Cursos Cadastrados", command=self.listar_alunos_cursos)
-        btn_listar_alunos_cursos.pack(pady=5)
-
-        btn_editar_aluno_curso = Button(self.root, text="Editar Aluno e Curso", command=self.editar_aluno_curso)
-        btn_editar_aluno_curso.pack(pady=5)
-
-        btn_excluir_aluno_curso = Button(self.root, text="Excluir Aluno e Curso", command=self.excluir_aluno_curso)
-        btn_excluir_aluno_curso.pack(pady=5)
-
-        btn_detalhes_aluno_curso = Button(self.root, text="Detalhes do Aluno e Curso", command=self.detalhes_aluno_curso)
-        btn_detalhes_aluno_curso.pack(pady=5)
-
-        self.label_status = Label(self.root, text="", fg="green")
-        self.label_status.pack(pady=10)
-
-        # Adiciona um evento de clique duplo na Treeview
-        self.tree.bind("<Double-1>", self.visualizar_detalhes)
-
-        self.root.mainloop()
-
-    def cadastrar_aluno_curso(self):
-        campos = [
-            ("Nome do Aluno", "Digite o nome completo do aluno:"),
-            ("Idade do Aluno", "Digite a idade do aluno:"),
-            ("Sexo do Aluno", "Digite o sexo do aluno:"),
-            ("Endereço do Aluno", "Digite o endereço do aluno:"),
-            ("E-mail do Aluno", "Digite o e-mail do aluno:"),
-            ("Telefone do Aluno", "Digite o telefone do aluno:"),
-            ("CPF do Aluno", "Digite o CPF do aluno:"),
-            ("Nome do Curso", "Digite o nome do curso:"),
-            ("Prazo do Curso (em meses)", "Digite o prazo do curso:"),
-            ("Detalhes do Curso", "Digite detalhes adicionais do curso:")
+        self.campos = [
+            "Nome Completo", "Idade", "Email", "Telefone", "Data de Nascimento",
+            "Sexo", "CPF", "Curso Desejado", "Turno", "Data de Início"
         ]
+        self.entradas = {}
 
-        dados_aluno_curso = []
+        self.criar_csv_se_nao_existir()
 
-        for label, prompt in campos:
-            resposta = simpledialog.askstring("Cadastro", prompt)
-            if resposta is None:
+        # Formulário
+        frame_form = tk.LabelFrame(self.root, text="Cadastrar Novo Aluno")
+        frame_form.pack(pady=10)
+
+        for i, campo in enumerate(self.campos):
+            tk.Label(frame_form, text=campo).grid(row=i, column=0, sticky="e", padx=5, pady=2)
+            entrada = tk.Entry(frame_form, width=40)
+            entrada.grid(row=i, column=1, padx=5, pady=2)
+            self.entradas[campo] = entrada
+
+        botoes_frame = tk.Frame(frame_form)
+        botoes_frame.grid(row=len(self.campos), column=1, pady=10)
+
+        tk.Button(botoes_frame, text="Cadastrar", width=15, command=self.cadastrar).grid(row=0, column=0, padx=5)
+        tk.Button(botoes_frame, text="Limpar", width=15, command=self.limpar_formulario).grid(row=0, column=1, padx=5)
+
+        # Área de busca
+        frame_busca = tk.LabelFrame(self.root, text="Buscar Alunos")
+        frame_busca.pack(pady=5)
+
+        tk.Label(frame_busca, text="Buscar por Nome ou Curso:").pack(side="left", padx=5)
+        self.entrada_busca = tk.Entry(frame_busca, width=40)
+        self.entrada_busca.pack(side="left", padx=5)
+        tk.Button(frame_busca, text="Buscar", command=self.buscar_alunos).pack(side="left", padx=5)
+        tk.Button(frame_busca, text="Mostrar Todos", command=self.carregar_alunos).pack(side="left", padx=5)
+
+        # Tabela
+        self.tree = ttk.Treeview(self.root, columns=self.campos, show="headings", height=15)
+        for campo in self.campos:
+            self.tree.heading(campo, text=campo)
+            self.tree.column(campo, width=100)
+        self.tree.pack(pady=10, padx=10, fill="x")
+
+        # Exportar
+        frame_export = tk.Frame(self.root)
+        frame_export.pack()
+        tk.Button(frame_export, text="Exportar para Excel", command=self.exportar_excel).pack(pady=10)
+
+        self.carregar_alunos()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def criar_csv_se_nao_existir(self):
+        if not os.path.exists(CSV_FILE):
+            with open(CSV_FILE, mode='w', newline='', encoding='latin1') as file:
+                writer = csv.writer(file)
+                writer.writerow(self.campos)
+
+    def cpf_ja_cadastrado(self, cpf):
+        if not os.path.exists(CSV_FILE):
+            return False
+        with open(CSV_FILE, mode='r', newline='', encoding='latin1') as file:
+            reader = csv.reader(file)
+            next(reader, None)
+            for row in reader:
+                if len(row) > 6 and row[6] == cpf:
+                    return True
+        return False
+
+    def cadastrar(self):
+        dados = []
+        for campo in self.campos:
+            valor = self.entradas[campo].get().strip()
+            if not valor:
+                messagebox.showwarning("Campo obrigatório", f"Preencha o campo '{campo}'.")
                 return
-            dados_aluno_curso.append(resposta)
+            dados.append(valor)
 
-        with open('alunos_cursos.csv', mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(dados_aluno_curso)
-
-        self.label_status.config(text="Cadastro do aluno e curso realizado com sucesso!", fg="green")
-        self.listar_alunos_cursos()
-
-    def listar_alunos_cursos(self):
-        self.tree.delete(*self.tree.get_children())  # Limpar a Treeview antes de exibir novamente
-        if os.path.exists('alunos_cursos.csv'):
-            with open('alunos_cursos.csv', mode='r') as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    self.tree.insert("", "end", values=row)
-
-            self.label_status.config(text="")
-        else:
-            self.label_status.config(text="Nenhum aluno e curso cadastrado.", fg="red")
-
-    def excluir_aluno_curso(self):
-        selected_item = self.tree.selection()
-        if not selected_item:
-            self.label_status.config(text="Selecione um aluno e curso para excluir.", fg="red")
+        if self.cpf_ja_cadastrado(dados[6]):
+            messagebox.showerror("Erro", "Este CPF já está cadastrado.")
             return
 
-        confirmed = messagebox.askyesno("Confirmação", "Tem certeza que deseja excluir este aluno e curso?")
-        if confirmed:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-
-            with open('alunos_cursos.csv', 'r') as file:
-                data = list(csv.reader(file))
-
-            # Encontrar o índice do aluno e curso com base no Nome do Aluno
-            index_to_remove = None
-            for i, row in enumerate(data):
-                if row and row[0] == selected_id:
-                    index_to_remove = i
-                    break
-
-            if index_to_remove is not None:
-                del data[index_to_remove]
-
-                with open('alunos_cursos.csv', 'w', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerows(data)
-
-                self.label_status.config(text="Aluno e curso excluídos com sucesso!", fg="green")
-                self.listar_alunos_cursos()
-            else:
-                self.label_status.config(text="Nome do aluno não encontrado.", fg="red")
-
-    def visualizar_detalhes(self, event):
-        selected_item = self.tree.selection()
-        if selected_item:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-            messagebox.showinfo("Detalhes do Aluno e Curso", f"Nome do Aluno: {selected_id}\nMais detalhes aqui...")
-
-    def detalhes_aluno_curso(self):
-        selected_item = self.tree.selection()
-        if selected_item:
-            selected_id = self.tree.item(selected_item, 'values')[0]
-            messagebox.showinfo("Detalhes do Aluno e Curso", f"Nome do Aluno: {selected_id}\nMais detalhes aqui...")
-
-    def editar_aluno_curso(self):
-        selected_item = self.tree.selection()
-        if selected_item:
-            # Recupera os dados atuais do aluno e curso
-            dados_atuais = list(self.tree.item(selected_item, 'values'))
-
-            campos = [
-                ("Nome do Aluno", dados_atuais[0]),
-                ("Idade do Aluno", dados_atuais[1]),
-                ("Sexo do Aluno", dados_atuais[2]),
-                ("Endereço do Aluno", dados_atuais[3]),
-                ("E-mail do Aluno", dados_atuais[4]),
-                ("Telefone do Aluno", dados_atuais[5]),
-                ("CPF do Aluno", dados_atuais[6]),
-                ("Nome do Curso", dados_atuais[7]),
-                ("Prazo do Curso", dados_atuais[8]),
-                ("Detalhes do Curso", dados_atuais[9])
-            ]
-
-            novos_dados = []
-
-            for label, valor_atual in campos:
-                resposta = simpledialog.askstring("Edição", f"{label} (atual: {valor_atual}):")
-                if resposta is None:
-                    return
-                novos_dados.append(resposta)
-
-            # Remove o aluno e curso atual
-            self.excluir_aluno_curso()
-
-            # Adiciona os novos dados
-            with open('alunos_cursos.csv', mode='a', newline='') as file:
+        try:
+            with open(CSV_FILE, mode='a', newline='', encoding='latin1') as file:
                 writer = csv.writer(file)
-                writer.writerow(novos_dados)
+                writer.writerow(dados)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao salvar dados: {e}")
+            return
 
-            self.label_status.config(text="Edição do aluno e curso realizada com sucesso!", fg="green")
-            self.listar_alunos_cursos()
+        self.limpar_formulario()
+        self.carregar_alunos()
+        messagebox.showinfo("Sucesso", "Aluno cadastrado com sucesso!")
 
+    def limpar_formulario(self):
+        for entrada in self.entradas.values():
+            entrada.delete(0, tk.END)
+
+    def carregar_alunos(self):
+        self.tree.delete(*self.tree.get_children())
+        if not os.path.exists(CSV_FILE):
+            return
+        with open(CSV_FILE, mode='r', newline='', encoding='latin1') as file:
+            reader = csv.reader(file)
+            next(reader, None)
+            for row in reader:
+                if row:
+                    self.tree.insert("", "end", values=row)
+
+    def buscar_alunos(self):
+        termo = self.entrada_busca.get().lower()
+        self.tree.delete(*self.tree.get_children())
+        try:
+            with open(CSV_FILE, mode='r', newline='', encoding='latin1') as file:
+                reader = csv.reader(file)
+                next(reader, None)
+                for row in reader:
+                    if termo in row[0].lower() or termo in row[7].lower():
+                        self.tree.insert("", "end", values=row)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao buscar dados: {e}")
+
+    def exportar_excel(self):
+        if not os.path.exists(CSV_FILE):
+            messagebox.showwarning("Aviso", "Nenhum dado para exportar.")
+            return
+
+        wb = Workbook()
+        ws = wb.active
+        ws.append(self.campos)
+
+        with open(CSV_FILE, mode='r', newline='', encoding='latin1') as file:
+            reader = csv.reader(file)
+            next(reader, None)
+            for row in reader:
+                ws.append(row)
+
+        filepath = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        if filepath:
+            wb.save(filepath)
+            messagebox.showinfo("Exportação", "Dados exportados com sucesso!")
+
+    def on_close(self):
+        self.salvar_backup()
+        self.root.destroy()
+
+    def salvar_backup(self):
+        if os.path.exists(CSV_FILE):
+            shutil.copy(CSV_FILE, BACKUP_FILE)
+
+# Executar programa
 if __name__ == "__main__":
-    cadastro_alunos_cursos = CadastroAlunosCursos()
+    root = tk.Tk()
+    app = SistemaCursos(root)
+    root.mainloop()
